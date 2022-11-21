@@ -69,7 +69,7 @@ void parse_e_flag_patterns_files(int argc, char **argv, grep_flags* flags, file_
     // }
     // strcpy(patterns[*pattern_counter].pattern_name, res);
             
-            if(strchr(argv[i], 'e') == argv[strlen(argv[i] - 1)]) 
+            if(strchr(argv[i], 'e') == argv[i] + strlen(argv[i]) - 1)
             {
                 strcpy(patterns[*pattern_counter].pattern_name, argv[i + 1]);
                 printf("0deb %s\n", patterns[*pattern_counter].pattern_name);
@@ -83,7 +83,7 @@ void parse_e_flag_patterns_files(int argc, char **argv, grep_flags* flags, file_
         }
 
         // is file
-        if(argv[i][0] != '-' && strspn(argv[i - 1], "-e") != 2 && *pattern_counter != 0 && !file_already_stored(files, files_counter, argv[i])) {
+        if(argv[i][0] != '-' && !(strchr(argv[i - 1], '-') && strchr(argv[i - 1], 'e')) &&strspn(argv[i - 1], "-e") != 2 && *pattern_counter != 0 && !file_already_stored(files, files_counter, argv[i])) {
             strcpy(files[*files_counter].file_name, argv[i]);
             (*files_counter)++;
         }
