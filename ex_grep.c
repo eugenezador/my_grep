@@ -4,7 +4,7 @@ int main(int argc, char **argv) {
   if (argc > 2){
       file_s files[argc];
       pattern_s patterns[argc];
-      grep_flags flags = {0, 0, 0, 0, 0, 0, 0, 0};
+      grep_flags flags = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
       
       init_patterns(patterns, argc);
       init_files(files, argc);
@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 void init_patterns(pattern_s* patterns,int size) {
     for (int i = 0; i < size; i++) {
         strcpy(patterns[i].pattern_name, "");
+        strcpy(patterns[i].file_as_pattern, "");
     }
 }
 void init_files(file_s* files, int size) {
@@ -37,11 +38,14 @@ void init_files(file_s* files, int size) {
 void parse_input(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter) {
     
     
-    // get e flags and patterns and files
-    parse_e_flag_patterns_files(argc, argv, flags, files, patterns, pattern_counter, files_counter);
+    // get e flag patterns
+    parse_e_flag_patterns(argc, argv, flags, patterns, pattern_counter);
+
+    // get f flag patterns
+    parse_f_flag_patterns(argc, argv, flags, patterns, pattern_counter);
     
     // get flags (except e) patterns files
-    parse_input_ignore_e_flag(argc, argv, flags, files, patterns, pattern_counter, files_counter);
+    parse_input_ignore_e_f_flags(argc, argv, flags, files, patterns, pattern_counter, files_counter);
     
     //Debug
 //    for(int i = 0; i < *pattern_counter; i++) {
@@ -53,44 +57,44 @@ void parse_input(int argc, char **argv, grep_flags* flags, file_s* files, patter
 
 }
 
-void parse_e_flag_patterns_files(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter) {
+void parse_e_flag_patterns(int argc, char **argv, grep_flags* flags, pattern_s* patterns, int* pattern_counter) {
     
     for(int i = 1; i < argc; i++) {
         // is e pattern
-        if(argv[i][0] == '-' && argv[i + 1][0] != '-' && strchr(argv[i], 'e') && i != argc - 1 && !pattern_already_stored(patterns, pattern_counter, argv[i + 1])) {
-            
-    //         char *res = NULL;
-    // if (strchr(argv[i], 'e') == argv[i] + strlen(argv[i]) - 1) {
-    //     if (i + 1 < argc) res = argv[i + 1]; // слитно
-    //     printf("0 debug: %s\n", res);
-    // } else {
-    //     res = strchr(argv[i], 'e') + 1;
-    //     printf("1 debug: %s\n", res); // раздельно
-    // }
-    // strcpy(patterns[*pattern_counter].pattern_name, res);
-            
+        if(argv[i][0] == '-' && strchr(argv[i], 'e') && i != argc - 1 && !pattern_already_stored(patterns, pattern_counter, argv[i + 1])) {
+
             if(strchr(argv[i], 'e') == argv[i] + strlen(argv[i]) - 1)
             {
                 strcpy(patterns[*pattern_counter].pattern_name, argv[i + 1]);
-                printf("0deb %s\n", patterns[*pattern_counter].pattern_name);
             } else {
                 strcpy(patterns[*pattern_counter].pattern_name, strchr(argv[i], 'e') + 1);
-                printf("1deb %s\n", patterns[*pattern_counter].pattern_name);
             }
             (*pattern_counter)++;
             flags->e_template = true;
-            continue;
-        }
-
-        // is file
-        if(argv[i][0] != '-' && !(strchr(argv[i - 1], '-') && strchr(argv[i - 1], 'e')) &&strspn(argv[i - 1], "-e") != 2 && *pattern_counter != 0 && !file_already_stored(files, files_counter, argv[i])) {
-            strcpy(files[*files_counter].file_name, argv[i]);
-            (*files_counter)++;
         }
     }
 }
 
-void parse_input_ignore_e_flag(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter) {
+void parse_f_flag_patterns(int argc, char **argv, grep_flags* flags, pattern_s* patterns, int* pattern_counter) {
+    
+    for(int i = 1; i < argc; i++) {
+
+        if(argv[i][0] == '-' && strchr(argv[i], 'f') && i != argc - 1 && !pattern_already_stored(patterns, pattern_counter, argv[i + 1])) {
+
+            if(strchr(argv[i], 'f') == argv[i] + strlen(argv[i]) - 1)
+            {
+                strcpy(patterns[*pattern_counter].file_as_pattern, argv[i + 1]);
+            } else {
+                strcpy(patterns[*pattern_counter].file_as_pattern, strchr(argv[i], 'f') + 1);
+            }
+            (*pattern_counter)++;
+            flags->f_file_is_a_pattern = true;
+        }
+    }
+}
+
+
+void parse_input_ignore_e_f_flags(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter) {
     for (int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             parse_flags(flags, argv[i]);
@@ -100,10 +104,14 @@ void parse_input_ignore_e_flag(int argc, char **argv, grep_flags* flags, file_s*
             (*pattern_counter)++;
             continue;
         }
-        if(*pattern_counter != 0 && argv[i][0] != '-' && !flags->e_template && !file_already_stored(files, files_counter, argv[i])) {
-            strcpy(files[*files_counter].file_name, argv[i]);
-            (*files_counter)++;
-        }
+
+        if ( !( (strchr(argv[i], 'e') && argv[i][0] == '-') ||
+               (i != 1 && argv[i - 1][strlen(argv[i - 1]) - 1] == 'e' && argv[i - 1][0] == '-') ||
+               (!strcmp(argv[i], patterns[*pattern_counter].pattern_name)))) 
+              {
+                strcpy(files[*files_counter].file_name, argv[i]);
+                (*files_counter)++;
+              }
     }
 }
 
@@ -111,32 +119,26 @@ void parse_flags(grep_flags *flags, char *flag_array) {
   flag_array++; // пропускаем первое тире
   for (; *flag_array != '\0'; flag_array++) {
     switch (*flag_array) {
-        case 'e':
-          flags->e_template= true;
-          break;
-        case 'i':
-      flags->i_ignore_registr = true;
-      break;
+    case 'e':
+      flags->e_template= true; break;
+    case 'i':
+      flags->i_ignore_registr = true; break;
     case 'v':
-      flags->v_invert_search = true;
-      break;
+      flags->v_invert_search = true; break;
     case 'c':
-      flags->c_show_only_match_count = true;
-      break;
+      flags->c_show_only_match_count = true; break;
     case 'l':
-      flags->l_show_match_files = true;
-      break;
+      flags->l_show_match_files = true; break;
     case 'n':
-      flags->n_show_number_of_row = true;
-      break;
+      flags->n_show_number_of_row = true; break;
     case 'h':
-      flags->h_dont_show_file_name = true;
-      break;
+      flags->h_dont_show_file_name = true; break;
     case 's':
-      flags->s_hide_file_error_message = true;
-      break;
-    // default:
-    //   printf("Invalid option!");
+      flags->s_hide_file_error_message = true; break;
+    case 'f':
+      flags->f_file_is_a_pattern = true; break;
+    case 'o':
+      flags->o_pattern_inside_line = true; break;
     }
   }
 }
@@ -169,7 +171,7 @@ void grep_parsed_data(grep_flags flags,file_s* files, pattern_s* patterns, int p
     for(int i = 0; i < files_counter; i++) {
         FILE *file = fopen(files[i].file_name, "r");
         if(file == NULL) {
-            if(!flags.s_hide_file_error_message) printf("grep: %s: No such file or directory", files[i].file_name);
+            if(!flags.s_hide_file_error_message) printf("grep: %s: No such file or directory\n", files[i].file_name);
         } else {
             match_lines_counter = search_in_file(file, patterns, pattern_counter, flags, files[i].file_name, files_counter);
             fclose(file);
@@ -216,6 +218,11 @@ void change_end_line_symbol_to_null(char* line_buf) {
 
 void search_selector(char* line_buf, pattern_s pattern, grep_flags flags, int* match_lines_counter, int line_number, char* file_name, int files_counter) {
     
+    if(flags.f_file_is_a_pattern ){
+        search_file_as_a_pattern();
+    } else {
+
+    }
     search_pattern_in_line(line_buf, pattern, flags, match_lines_counter, line_number, file_name, files_counter);
     
 }
