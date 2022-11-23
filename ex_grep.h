@@ -14,8 +14,9 @@
  typedef struct {
      char pattern_name[100];
      char file_as_pattern[100];
-    //  char file_name[100];
+     bool is_pattren_a_file;
  }pattern_s;
+
 
 typedef struct {
   bool e_template;
@@ -40,7 +41,7 @@ void parse_e_flag_patterns(int argc, char **argv, grep_flags* flags, pattern_s* 
 
 void parse_f_flag_patterns(int argc, char **argv, grep_flags* flags, pattern_s* patterns, int* pattern_counter);
 
-void parse_input_ignore_e_flag(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter);
+void parse_input_ignore_e_f_flags(int argc, char **argv, grep_flags* flags, file_s* files, pattern_s* patterns, int* pattern_counter, int* files_counter);
 
 void parse_flags(grep_flags* flags, char* flag_array);
 
@@ -56,7 +57,9 @@ void change_end_line_symbol_to_null(char* line_buf);
 
 void search_selector(char* line_buf, pattern_s pattern, grep_flags flags, int* match_lines_counter, int line_number, char* file_name, int files_counter);
 
-void search_file_as_a_pattern();
+void search_file_as_a_pattern(char* line_buf, pattern_s pattern, grep_flags flags, int* match_lines_counter, int line_number, char* file_name, int files_counter);
+
+void search_file_pattern_in_line(char* line_buf, char* pattern_line_buf, grep_flags flags, int* match_lines_counter, int line_number, char* file_name, int files_counter);
 
 void search_pattern_in_line(char* line_buf, pattern_s pattern, grep_flags flags, int* match_lines_counter, int line_number, char* file_name, int files_counter);
 
