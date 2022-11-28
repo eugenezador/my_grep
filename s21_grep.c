@@ -231,7 +231,7 @@ void patterns_from_file_to_array(pattern_s pattern, char* all_templates) {
   FILE *file = fopen(pattern.file_as_pattern, "r");
   if (file == NULL) {
     // if (!flags.s_hide_file_error_message) {
-      printf("grep: %s: No such file or directory\n", pattern.file_as_pattern);
+      fprintf(stderr, "grep: %s: No such file or directory\n", pattern.file_as_pattern);
     // }
   } else {
     size_t line_buf_size = 0;
@@ -262,7 +262,7 @@ void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
     FILE *file = fopen(files[i].file_name, "r");
     if (file == NULL) {
       if (!flags.s_hide_file_error_message) {
-        printf("grep: %s: No such file or directory\n", files[i].file_name);
+        fprintf(stderr,"grep: %s: No such file or directory\n", files[i].file_name);
           file_error_counter++;
       }
     } else {
@@ -457,9 +457,9 @@ void search_file_as_a_pattern(char *line_buf, pattern_s pattern,
 
   FILE *pattern_is_file = fopen(pattern.file_as_pattern, "r");
   if (pattern_is_file == NULL) {
-    if (!flags.s_hide_file_error_message) {
+    if (flags.s_hide_file_error_message == false) {
       if (line_number == 1) {
-        printf("grep: %s: No such file or directory\n",
+        fprintf(stderr, "grep: %s: No such file or directory\n",
                pattern.file_as_pattern);
       }
     }
