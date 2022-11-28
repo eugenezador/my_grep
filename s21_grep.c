@@ -299,19 +299,24 @@ int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
       change_end_line_symbol_to_null(line_buf);
       line_number++;
 
-      one_time_search(line_buf, flags, &match_lines_counter,
-                             line_number, file_name, files_counter,
-                             &one_time_counter, all_templates);
+      // one_time_search(line_buf, flags, &match_lines_counter,
+      //                        line_number, file_name, files_counter,
+      //                        &one_time_counter, all_templates);
 
-      // for (int i = 0; i < pattern_counter; i++) {
+      for (int i = 0; i < pattern_counter; i++) {
 
-      //   print_pattern_info = true;
-      //  // one_time_counter = true;
+        print_pattern_info = true;
+       // one_time_counter = true;
 
-      //   search_selector(line_buf, patterns[i], flags, &match_lines_counter,
-      //                   line_number, file_name, files_counter,
-      //                   &print_pattern_info, &one_time_counter);
-      // }
+        search_selector(line_buf, patterns[i], flags, &match_lines_counter,
+                        line_number, file_name, files_counter,
+                        &print_pattern_info, &one_time_counter);
+      }
+
+      if (flags.v_invert_search && one_time_counter) {
+            print_found_matches(line_buf, flags, line_number, file_name,
+                          files_counter, &match_lines_counter, &one_time_counter);
+            }
     }
   }
   free(line_buf);
@@ -513,15 +518,13 @@ void search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
     printf("Regex compile error\n");
   } else {
     int search_status = regexec(&regex, line_buf, 0, NULL, 0);
-    if (!flags.v_invert_search && search_status == 0) {
+    if (search_status == 0) {
+      if(!flags.v_invert_search) {
       print_found_matches(line_buf, flags, line_number, file_name,
                           files_counter, match_lines_counter, one_time_counter);
-    } else if (flags.v_invert_search && search_status == REG_NOMATCH) {
-        print_found_matches(line_buf, flags, line_number, file_name,
-                            files_counter, match_lines_counter,
-                            one_time_counter);
-    }
-   *one_time_counter = false;
+      }                    
+                          *one_time_counter = false;
+    } 
   }
   regfree(&regex);
 }
