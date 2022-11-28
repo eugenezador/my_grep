@@ -12,10 +12,15 @@ int main(int argc, char **argv) {
     int pattern_counter = 0;
     int files_counter = 0;
 
-    parse_input(argc, argv, &flags, files, patterns, &pattern_counter,
-                &files_counter);
+    parse_input(argc, argv, &flags, files, patterns, &pattern_counter, &files_counter);
+    
+    char all_templates[BUFSIZ] = {0};
 
-    grep_parsed_data(flags, files, patterns, pattern_counter, files_counter);
+    get_all_templates(patterns, pattern_counter, all_templates);
+
+    // printf("all t = %s\n", all_templates);
+
+    grep_parsed_data(flags, files, patterns, pattern_counter, files_counter, all_templates);
 
   } else {
     printf("Bad try to use grep!");
@@ -50,14 +55,14 @@ void parse_input(int argc, char **argv, grep_flags *flags, file_s *files,
   parse_input_ignore_e_f_flags(argc, argv, flags, files, patterns,
                                pattern_counter, files_counter);
 
-    for(int i = 0; i < *pattern_counter; i++) {
-        if(!patterns[i].is_pattren_a_file) printf("pat = %s\n", patterns[i].pattern_name);
-        else printf("f pat = %s\n", patterns[i].file_as_pattern);
-    }
+    // for(int i = 0; i < *pattern_counter; i++) {
+    //     if(!patterns[i].is_pattren_a_file) printf("pat = %s\n", patterns[i].pattern_name);
+    //     else printf("f pat = %s\n", patterns[i].file_as_pattern);
+    // }
 
-    for(int i = 0; i < *files_counter; i++) {
-        printf("file = %s\n", files[i].file_name);
-    }
+    // for(int i = 0; i < *files_counter; i++) {
+    //     printf("file = %s\n", files[i].file_name);
+    // }
 }
 
 void parse_e_flag_patterns(int argc, char **argv, grep_flags *flags,
@@ -208,8 +213,43 @@ bool file_as_pattern_already_stored(pattern_s *patterns,
   return result;
 }
 
+void get_all_templates(pattern_s *patterns, int pattern_counter, char* all_templates) {
+  strcat(all_templates, "|");
+  for(int i = 0; i < pattern_counter; i++) {
+    if(patterns[i].is_pattren_a_file) {
+      patterns_from_file_to_array(patterns[i], all_templates);
+    } else {
+      strcat(all_templates, patterns[i].pattern_name);
+      strcat(all_templates, "|");
+    }
+  }
+}
+
+void patterns_from_file_to_array(pattern_s pattern, char* all_templates) {
+  FILE *file = fopen(pattern.file_as_pattern, "r");
+  if (file == NULL) {
+    // if (!flags.s_hide_file_error_message) {
+      printf("grep: %s: No such file or directory\n", pattern.file_as_pattern);
+    // }
+  } else {
+    size_t line_buf_size = 0;
+    char *pattern_line_buf = NULL;
+    while (getline(&pattern_line_buf, &line_buf_size, file) != -1) {
+      if (pattern_line_buf) {
+        change_end_line_symbol_to_null(pattern_line_buf);
+        if(strlen(pattern_line_buf) != 0) {
+          strcat(all_templates, pattern_line_buf);
+          strcat(all_templates, "|");
+        }
+      }
+    }
+    free(pattern_line_buf);
+    fclose(file);
+    }
+}
+
 void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
-                      int pattern_counter, int files_counter) {
+                      int pattern_counter, int files_counter, char* all_templates) {
     
     // bool empty_line = is_empty_line_in_patterns(patterns, pattern_counter);
 
@@ -225,7 +265,7 @@ void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
       }
     } else {
 
-            match_lines_counter = search_in_file(file, patterns, pattern_counter, flags, files[i].file_name, files_counter);
+            match_lines_counter = search_in_file(file, patterns, pattern_counter, flags, files[i].file_name, files_counter, all_templates);
 
       fclose(file);
     }
@@ -241,30 +281,8 @@ void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
   }
 }
 
-// bool is_empty_line_in_patterns(pattern_s *patterns, int patterns_cnt) {
-//     bool res = false;
-//     for (int i = 0; i < patterns_cnt; i++) {
-//         if (patterns[i].is_pattren_a_file) {
-//             char *line = NULL;
-//             size_t size = 0;
-//             FILE *fd = fopen(patterns[i].file_as_pattern, "r");
-//             if (fd) {
-//                 while (getline(&line, &size, fd) != -1) {
-//                     if (line && is_empty_line(line)) res = true;
-//                 }
-//                 fclose(fd);
-//                 free(line);
-//             }
-//         } else {
-//             if (is_empty_line(patterns[i].name)) res = true;
-//         }
-//     }
-//     return res;
-// }
-    
-
 int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
-                   grep_flags flags, char *file_name, int files_counter) {
+                   grep_flags flags, char *file_name, int files_counter, char* all_templates) {
 
   int match_lines_counter = 0;
   int line_number = 0;
@@ -281,18 +299,47 @@ int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
       change_end_line_symbol_to_null(line_buf);
       line_number++;
 
-      for (int i = 0; i < pattern_counter; i++) {
+      one_time_search(line_buf, flags, &match_lines_counter,
+                             line_number, file_name, files_counter,
+                             &one_time_counter, all_templates);
 
-        print_pattern_info = true;
+      // for (int i = 0; i < pattern_counter; i++) {
 
-        search_selector(line_buf, patterns[i], flags, &match_lines_counter,
-                        line_number, file_name, files_counter,
-                        &print_pattern_info, &one_time_counter);
-      }
+      //   print_pattern_info = true;
+      //  // one_time_counter = true;
+
+      //   search_selector(line_buf, patterns[i], flags, &match_lines_counter,
+      //                   line_number, file_name, files_counter,
+      //                   &print_pattern_info, &one_time_counter);
+      // }
     }
   }
   free(line_buf);
   return match_lines_counter;
+}
+
+void one_time_search(char *line_buf, grep_flags flags,
+                            int *match_lines_counter, int line_number,
+                            char *file_name, int files_counter,
+                            bool *one_time_counter, char* all_templates) {
+  regex_t regex;
+  int compile_status = get_regex_compile_status(&regex, flags, all_templates);
+
+  if (compile_status) {
+    printf("Regex compile error\n");
+  } else {
+    int search_status = regexec(&regex, line_buf, 0, NULL, 0);
+    if (!flags.v_invert_search && search_status == 0) {
+      print_found_matches(line_buf, flags, line_number, file_name,
+                          files_counter, match_lines_counter, one_time_counter);
+    } else if (flags.v_invert_search && search_status == REG_NOMATCH) {
+        print_found_matches(line_buf, flags, line_number, file_name,
+                            files_counter, match_lines_counter,
+                            one_time_counter);
+    }
+   *one_time_counter = false;
+  }
+  regfree(&regex);
 }
 
 
@@ -469,7 +516,7 @@ void search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
     if (!flags.v_invert_search && search_status == 0) {
       print_found_matches(line_buf, flags, line_number, file_name,
                           files_counter, match_lines_counter, one_time_counter);
-    } else if (flags.v_invert_search) {
+    } else if (flags.v_invert_search && search_status == REG_NOMATCH) {
         print_found_matches(line_buf, flags, line_number, file_name,
                             files_counter, match_lines_counter,
                             one_time_counter);
