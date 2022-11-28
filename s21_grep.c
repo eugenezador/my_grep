@@ -16,7 +16,9 @@ int main(int argc, char **argv) {
     
     char all_templates[BUFSIZ] = {0};
 
-    get_all_templates(patterns, pattern_counter, all_templates);
+    all_templates[0] = '|';
+
+    // get_all_templates(patterns, pattern_counter, all_templates);
 
     // printf("all t = %s\n", all_templates);
 
@@ -279,6 +281,7 @@ void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
       print_files_with_match(files[i].file_name, match_lines_counter);
     }
   }
+  all_templates[0] = '|';
 }
 
 int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
@@ -320,6 +323,7 @@ int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
     }
   }
   free(line_buf);
+  all_templates[0] = '|';
   return match_lines_counter;
 }
 
