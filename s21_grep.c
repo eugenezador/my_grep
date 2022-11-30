@@ -243,34 +243,32 @@ int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
   int match_lines_counter = 0;
   int line_number = 0;
 
-  bool print_pattern_info = true;
-  bool one_time_counter = true;
+  bool is_o_pattern_in_line = true;
+  bool is_pattern_in_line = false;
 
   size_t line_buf_size = 0;
   char *line_buf = NULL;
 
   while (getline(&line_buf, &line_buf_size, file) != -1) {
     if (line_buf) {
-      one_time_counter = true;
-      print_pattern_info = true;
+     is_pattern_in_line = false;
       change_end_line_symbol_to_null(line_buf);
       line_number++;
 
 
       for (int i = 0; i < pattern_counter; i++) {
 
-       print_pattern_info = true;
-       // one_time_counter = true;
+       is_o_pattern_in_line = true;
 
         search_selector(line_buf, patterns[i], flags, &match_lines_counter,
                         line_number, file_name, files_counter,
-                        &print_pattern_info, &one_time_counter);
+                        &is_o_pattern_in_line, &is_pattern_in_line);
       
       }
 
-      if ((flags.v_invert_search && one_time_counter)) {
+      if ((flags.v_invert_search && is_pattern_in_line == false)) {
             print_found_matches(line_buf, flags, line_number, file_name,
-                          files_counter, &match_lines_counter, &one_time_counter);
+                          files_counter, &match_lines_counter, &is_pattern_in_line);
             }
     }
   }
@@ -289,28 +287,28 @@ void change_end_line_symbol_to_null(char *line_buf) {
 
 void search_selector(char *line_buf, pattern_s pattern, grep_flags flags,
                      int *match_lines_counter, int line_number, char *file_name,
-                     int files_counter, bool *print_pattern_info,
-                     bool *one_time_counter) {
+                     int files_counter, bool *is_o_pattern_in_line,
+                     bool *is_pattern_in_line) {
 
   if (flags.o_pattern_inside_line && !flags.c_show_only_match_count && !flags.v_invert_search) {
     if (flags.f_file_is_a_pattern && pattern.is_pattren_a_file) {
       search_file_as_a_pattern(line_buf, pattern, flags, match_lines_counter,
                                line_number, file_name, files_counter,
-                               print_pattern_info, one_time_counter);
+                               is_o_pattern_in_line, is_pattern_in_line);
     } else {
       search_o_pattern_in_line(line_buf, pattern.pattern_name, flags,
                                match_lines_counter, line_number, file_name,
-                               files_counter, print_pattern_info);
+                               files_counter, is_o_pattern_in_line);
     }
   } else {
     if (flags.f_file_is_a_pattern && pattern.is_pattren_a_file) {
       search_file_as_a_pattern(line_buf, pattern, flags, match_lines_counter,
                                line_number, file_name, files_counter,
-                               print_pattern_info, one_time_counter);
+                               is_o_pattern_in_line, is_pattern_in_line);
     } else {
       search_pattern_in_line(line_buf, pattern, flags, match_lines_counter,
                              line_number, file_name, files_counter,
-                             one_time_counter);
+                             is_pattern_in_line);
     }
   }
 }
@@ -318,7 +316,7 @@ void search_selector(char *line_buf, pattern_s pattern, grep_flags flags,
 void search_o_pattern_in_line(char *line_buf, char *pattern_name,
                               grep_flags flags, int *match_lines_counter,
                               int line_number, char *file_name,
-                              int files_counter, bool *print_pattern_info) {
+                              int files_counter, bool *is_o_pattern_in_line) {
 
   regex_t regex;
   int compile_status = get_regex_compile_status(&regex, flags, pattern_name);
@@ -334,13 +332,13 @@ void search_o_pattern_in_line(char *line_buf, char *pattern_name,
     while (regexec(&regex, line_buf + line_search_position, 1, &match, 0) ==
            0) {
 
-      if (*print_pattern_info) {
+      if (*is_o_pattern_in_line) {
         (*match_lines_counter)++;
       }
 
       print_o_pattern_match(line_buf, flags, line_number, file_name,
                             files_counter, match, line_search_position,
-                            print_pattern_info);
+                            is_o_pattern_in_line);
 
       line_search_position += match.rm_eo;
 
@@ -356,10 +354,10 @@ void search_o_pattern_in_line(char *line_buf, char *pattern_name,
 void print_o_pattern_match(char *line_buf, grep_flags flags, int line_number,
                            char *file_name, int files_counter, regmatch_t match,
                            size_t line_search_position,
-                           bool *print_pattern_info) {
+                           bool *is_o_pattern_in_line) {
 
   if (!flags.c_show_only_match_count && !flags.l_show_match_files) {
-    if (*print_pattern_info) {
+    if (*is_o_pattern_in_line) {
       if (!flags.h_dont_show_file_name && files_counter > 1) {
         printf("%s:", file_name);
       }
@@ -371,15 +369,15 @@ void print_o_pattern_match(char *line_buf, grep_flags flags, int line_number,
          i < line_search_position + match.rm_eo; i++)
       printf("%c", line_buf[i]);
     printf("\n");
-    *print_pattern_info = false;
+    *is_o_pattern_in_line = false;
   }
 }
 
 void search_file_as_a_pattern(char *line_buf, pattern_s pattern,
                               grep_flags flags, int *match_lines_counter,
                               int line_number, char *file_name,
-                              int files_counter, bool *print_pattern_info,
-                              bool *one_time_counter) {
+                              int files_counter, bool *is_o_pattern_in_line,
+                              bool *is_pattern_in_line) {
 
   FILE *pattern_is_file = fopen(pattern.file_as_pattern, "r");
   if (pattern_is_file == NULL) {
@@ -398,11 +396,11 @@ void search_file_as_a_pattern(char *line_buf, pattern_s pattern,
         if (flags.o_pattern_inside_line && !flags.v_invert_search) {
           search_o_pattern_in_line(line_buf, pattern_line_buf, flags,
                                    match_lines_counter, line_number, file_name,
-                                   files_counter, print_pattern_info);
+                                   files_counter, is_o_pattern_in_line);
         } else {
           search_file_pattern_in_line(
               line_buf, pattern_line_buf, flags, match_lines_counter,
-              line_number, file_name, files_counter, one_time_counter);
+              line_number, file_name, files_counter, is_pattern_in_line);
         }
       }
     }
@@ -414,7 +412,7 @@ void search_file_as_a_pattern(char *line_buf, pattern_s pattern,
 void search_file_pattern_in_line(char *line_buf, char *pattern_line_buf,
                                  grep_flags flags, int *match_lines_counter,
                                  int line_number, char *file_name,
-                                 int files_counter, bool *one_time_counter) {
+                                 int files_counter, bool *is_pattern_in_line) {
 
   regex_t regex;
   int compile_status = get_regex_compile_status(&regex, flags, pattern_line_buf);
@@ -424,10 +422,10 @@ void search_file_pattern_in_line(char *line_buf, char *pattern_line_buf,
   } else {
     int search_status = regexec(&regex, line_buf, 0, NULL, 0);
     if (search_status == 0) {
+      *is_pattern_in_line= true;
       if(!flags.v_invert_search) {
-        print_found_matches(line_buf, flags, line_number, file_name, files_counter, match_lines_counter, one_time_counter);
+        print_found_matches(line_buf, flags, line_number, file_name, files_counter, match_lines_counter, is_pattern_in_line);
       }
-      *one_time_counter = false;
     } 
   }
   regfree(&regex);
@@ -436,7 +434,7 @@ void search_file_pattern_in_line(char *line_buf, char *pattern_line_buf,
 void search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
                             int *match_lines_counter, int line_number,
                             char *file_name, int files_counter,
-                            bool *one_time_counter) {
+                            bool *is_pattern_in_line) {
 
   regex_t regex;
   int compile_status = get_regex_compile_status(&regex, flags, pattern.pattern_name);
@@ -446,11 +444,11 @@ void search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
   } else {
     int search_status = regexec(&regex, line_buf, 0, NULL, 0);
     if (search_status == 0) {
+      *is_pattern_in_line= true;
       if(!flags.v_invert_search) {
       print_found_matches(line_buf, flags, line_number, file_name,
-                          files_counter, match_lines_counter, one_time_counter);
+                          files_counter, match_lines_counter, is_pattern_in_line);
       }
-        *one_time_counter = false;
     }
   }
   regfree(&regex);
@@ -469,9 +467,8 @@ int get_regex_compile_status(regex_t *regex, grep_flags flags, char *pattern) {
 
 void print_found_matches(char *line_buf, grep_flags flags, int line_number,
                          char *file_name, int files_counter,
-                         int *match_lines_counter, bool *one_time_counter) {
-  if (!flags.c_show_only_match_count && !flags.l_show_match_files &&
-      *one_time_counter) {
+                         int *match_lines_counter, bool *is_pattern_in_line) {
+  if (!flags.c_show_only_match_count && !flags.l_show_match_files) {
     if (flags.n_show_number_of_row) {
       if (flags.h_dont_show_file_name == false && files_counter > 1) {
         printf("%s:", file_name);
@@ -480,7 +477,7 @@ void print_found_matches(char *line_buf, grep_flags flags, int line_number,
     }
     printf("%s\n", line_buf);
   }
-  if (*one_time_counter)
+  // if (*is_pattern_in_line)
     (*match_lines_counter)++;
 }
 

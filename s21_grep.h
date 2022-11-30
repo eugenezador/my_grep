@@ -70,45 +70,45 @@ void change_end_line_symbol_to_null(char *line_buf);
 
 void search_selector(char *line_buf, pattern_s pattern, grep_flags flags,
                      int *match_lines_counter, int line_number, char *file_name,
-                     int files_counter, bool *print_pattern_info,
-                     bool *one_time_counter);
+                     int files_counter, bool *is_o_pattern_in_line,
+                     bool *is_pattern_in_line);
 
 void search_o_pattern_in_line(char *line_buf, char *pattern_name,
                               grep_flags flags, int *match_lines_counter,
                               int line_number, char *file_name,
-                              int files_counter, bool *print_pattern_info);
+                              int files_counter, bool *is_o_pattern_in_line);
 
 void print_o_pattern_match(char *line_buf, grep_flags flags, int line_number,
                            char *file_name, int files_counter, regmatch_t match,
                            size_t line_search_position,
-                           bool *print_pattern_info);
+                           bool *is_o_pattern_in_line);
 
 void search_file_as_a_pattern(char *line_buf, pattern_s pattern,
                               grep_flags flags, int *match_lines_counter,
                               int line_number, char *file_name,
-                              int files_counter, bool *print_pattern_info,
-                              bool *one_time_counter);
+                              int files_counter, bool *is_o_pattern_in_line,
+                              bool *is_pattern_in_line);
 
 void search_file_pattern_in_line(char *line_buf, char *pattern_line_buf,
                                  grep_flags flags, int *match_lines_counter,
                                  int line_number, char *file_name,
-                                 int files_counter, bool *one_time_counter);
+                                 int files_counter, bool *is_pattern_in_line);
 
 void search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
                             int *match_lines_counter, int line_number,
                             char *file_name, int files_counter,
-                            bool *one_time_counter);
+                            bool *is_pattern_in_line);
 
 void invert_search_pattern_in_line(char *line_buf, pattern_s pattern, grep_flags flags,
                             int *match_lines_counter, int line_number,
                             char *file_name, int files_counter,
-                            bool *one_time_counter);
+                            bool *is_pattern_in_line);
 
 int get_regex_compile_status(regex_t *regex, grep_flags flags, char *pattern);
 
 void print_found_matches(char *line_buf, grep_flags flags, int line_number,
                          char *file_name, int files_counter,
-                         int *match_lines_counter, bool *one_time_counter);
+                         int *match_lines_counter, bool *is_pattern_in_line);
 
 void print_mach_lines_counter(grep_flags flags, char *file_name,
                               int files_counter, int match_lines_counter);
