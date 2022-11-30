@@ -49,7 +49,6 @@ void parse_input_ignore_e_f_flags(int argc, char **argv, grep_flags *flags,
 
 void parse_flags(grep_flags *flags, char *flag_array);
 
-// int is_empty_line_in_patterns(pattern_s *patterns, int patterns_cnt);
 
 bool file_already_stored(file_s *files, const int *files_counter,
                          char *new_file);
@@ -59,20 +58,13 @@ bool pattern_already_stored(pattern_s *patterns, const int *pattern_counter,
 
 bool file_as_pattern_already_stored(pattern_s *patterns, const int *pattern_counter, char *new_pattern);
 
-void get_all_templates(pattern_s *patterns, int pattern_counter, char* all_templates);
-
-void patterns_from_file_to_array(pattern_s pattern, char* all_templates);
 
 void grep_parsed_data(grep_flags flags, file_s *files, pattern_s *patterns,
-                      int pattern_counter, int files_counter, char* all_templates);
+                      int pattern_counter, int files_counter);
 
 int search_in_file(FILE *file, pattern_s *patterns, int pattern_counter,
-                   grep_flags flags, char *file_name, int files_counter, char* all_templates);
+                   grep_flags flags, char *file_name, int files_counter);
 
-void one_time_search(char *line_buf, grep_flags flags,
-                            int *match_lines_counter, int line_number,
-                            char *file_name, int files_counter,
-                            bool *one_time_counter, char* all_templates);
 
 void change_end_line_symbol_to_null(char *line_buf);
 
@@ -125,3 +117,4 @@ void print_files_with_match(char *file_name, int match_lines_counter);
 
 
 #endif // SRC_GREP_S21_GREP_H_
+
